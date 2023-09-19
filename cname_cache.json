@@ -1,0 +1,74 @@
+{
+  "akamai": {
+    "cname_substring": "akamai edgekey edgesuit"
+  },
+  "azion": {
+    "cname_substring": "azion"
+  },
+  "cloudflare": {
+    "cname_substring": "cloudflare"
+  },
+  "cloudfront": {
+    "cname_substring": "cloudfront"
+  },
+  "incapsula": {
+    "cname_substring": "incapdns impervadns incapdns"
+  },
+  "fastly": {
+    "cname_substring": "fastly"
+  },
+  "edgecast": {
+    "cname_substring": "edgecastcdn alphacdn betacdn chicdn deltacdn edgecastcdn gammacdn iotacdn kappacdn lambdacdn mucdn nucdn omegacdn omicroncdn phicdn psicdn rhocdn sigmacdn systemcdn taucdn thetacdn upsiloncdn xicdn zetacdn transactcdn"
+  },
+  "limelight": {
+    "cname_substring": "llnw"
+  },
+  "stackpath": {
+    "cname_substring": "stackpath netdna hwcdn"
+  },
+  "cdnetworks": {
+    "cname_substring": "cdnga cdngc cdnetworks"
+  },
+  "cdn77": {
+    "cname_substring": "cdn77"
+  },
+  "chinanetcenter": {
+    "cname_substring": "wscdns wswebpic tl88 lxdns cdn30 qtlcdn cdn20"
+  },
+  "microsoft": {
+    "cname_substring": "trafficmanager msedge"
+  },
+  "alibaba": {
+    "cname_substring": "kunlun cdngslb"
+  },
+  "baishan": {
+    "cname_substring": "baishan bsccdn bsgslb"
+  },
+  "baidu": {
+    "cname_substring": "jomodns zjsxlt yunjiasu yjs-cdn shifen"
+  },
+  "tencent": {
+    "cname_substring": "dayugslb tdnsv8 intlscdn dnsv1 tdnsdp1 tcloudscdn"
+  },
+  "yunduncdn": {
+    "cname_substring": "yundun"
+  },
+  "merlincdn": {
+    "cname_substring": "merlin"
+  },
+  "jingdong": {
+    "cname_substring": "jcloud-cdn"
+  },
+  "keycdn": {
+    "cname_substring": "kxcdn"
+  },
+  "bilibili": {
+    "cname_substring": "bilicdn"
+  },
+  "kingsoft": {
+    "cname_substring": "ksyun"
+  },
+  "huawei": {
+    "cname_substring": "cdnhwc hwclouds"
+  }
+}
