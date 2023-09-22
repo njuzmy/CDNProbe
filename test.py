@@ -41,21 +41,21 @@ def fun(website):
     d = mydns.DnsResolve("prefix1.txt")
     cdn = multifinder.CdnDetect("cname_cache.json","cdnlist.txt")
     # dns_dict = d.process_resolve(website)
-    dns_dict=d.yzx_process_resolve(website)
+    dns_dict, ip_number = d.yzx_process_resolve(website)
     print(dns_dict)
     # result = cdn.pidentify_cdn(website,dns_dict)
     result = cdn.yzx_identify_cdn(website,dns_dict)
 
     key = cdn.key
-    return (result, key)
+    return (result, key, ip_number)
     
 
-ans_dirpath="ans/data"
+ans_dirpath="data"
 
 if __name__ == "__main__":
     # d = mydns.DnsResolve("prefix1.txt")
     # cdn = multifinder.CdnDetect("cname_cache.json","../top1m-multi-cdn/cdnlist.txt")
-    websites = pd.read_csv("top-1m.csv")["domain"][0:2].to_list()
+    websites = pd.read_csv("top-1m.csv")["domain"][0:10].to_list()
     stime = time.time()
     # print(parallel(websites))
 
@@ -73,9 +73,10 @@ if __name__ == "__main__":
         print(result)
         result_dict[website] = result[1]
         result_dict[website]['cdn'] = result[0]
+        result_dict[website]['dns'] = result[2]
 
-        with open(os.path.join(ans_dirpath,f'9-18_{time.time()}.json'),"w")as f:
-            json.dump(result_dict, f, indent=4)
+        # with open(os.path.join(ans_dirpath,f'9-21_{time.time()}.json'),"w")as f:
+        #     json.dump(result_dict, f, indent=4)
 
     # executor =  ThreadPoolExecutor(max_workers=3)
     
@@ -87,7 +88,7 @@ if __name__ == "__main__":
     #     i += 1
     # #print(result_dict)
     with open(os.path.join(ans_dirpath,'ans.json'),'w') as f:
-            json.dump(result_dict, f, indent=4)
+        json.dump(result_dict, f, indent=4)
     print(time.time() - stime)
     # with ThreadPoolExecutor(max_workers=10) as executor:
     #     ans = [executor.submit(fun, website) for website in websites]

@@ -112,6 +112,7 @@ class DnsResolve:
 
     def yzx_process_resolve(self, domain):
         cname_prefix = {}
+        ip_number = {}
         lock = threading.Lock()
         stop_signal=False
 
@@ -148,6 +149,10 @@ class DnsResolve:
             elif ip is not None:
                 with lock:
                     cname_prefix[cname] = [ip]
+            if ip in ip_number.keys():
+                ip_number[ip] += 1
+            else:
+                ip_number[ip] = 1
 
         
         threads = []
@@ -186,7 +191,7 @@ class DnsResolve:
                 break
         stop_signal = True
         print()
-        return cname_prefix
+        return cname_prefix, ip_number
 
     def dns_result_prefix(self, domain):  # unify the formats for analyze
         cname_prefix = {}

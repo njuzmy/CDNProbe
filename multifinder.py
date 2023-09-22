@@ -24,6 +24,8 @@ class CdnDetect:
         self.rdap_refresh = 60 * 60 * 24
         self.rdap_cache = intervaltree.IntervalTree()
         self.cname_cache = json.load(open(cname_file, 'r'))
+        self.off_net = []
+        self.dns_hijack = []
         with open(cdn_file, 'r') as file:
             for line in file.readlines():
                 self.cdn_list.append(line.strip().lower())
@@ -242,9 +244,6 @@ class CdnDetect:
         try:
             http_header = self.get_http_header(domain, ip)
             http_key_header, http_header_cdn = self.http_finger(http_header)
-            if len(http_header_cdn) != 0:
-                self.key["http_header"].append(http_key_header)
-                return "http_header", http_header_cdn
         except Exception as e:
             print(e)
             print("http resolve error")
@@ -253,9 +252,6 @@ class CdnDetect:
         try:
             cert_info = self.get_tls_cert(domain, ip)
             cert_info_cdn = self.cert(cert_info)
-            if cert_info_cdn is not None:
-                self.key["tls_cert"].append(cert_info)
-                return "tls_cert", cert_info_cdn
         except Exception as e:
             print(e)
             print("TLS_cert resolve error")
@@ -267,9 +263,19 @@ class CdnDetect:
             extracted_rdap_info = self.extract_rdap_info(rdap_info)
             if extracted_rdap_info is not None:
                 rdap_info_cdn = self.rdap(extracted_rdap_info)
-                if rdap_info_cdn is not None:
-                    self.key["rdap_info"].append(extracted_rdap_info)
-                    return "rdap_info", rdap_info_cdn
+                
+
+        if len(http_header_cdn) != 0:
+            self.key["http_header"].append(http_key_header)
+            if rdap_info_cdn == None:
+                self.key["off_net"].append(ip)
+            return "http_header", http_header_cdn
+        elif cert_info_cdn is not None:
+            self.key["tls_cert"].append(cert_info)
+            return "tls_cert", cert_info_cdn
+        elif rdap_info_cdn is not None:
+            self.key["rdap_info"].append(extracted_rdap_info)
+            return "rdap_info", rdap_info_cdn
         # except Exception as e:
         #     print(e)
         #     print("RDAP info resolve error")
@@ -287,7 +293,10 @@ class CdnDetect:
 
     def yzx_identify_cdn(self, domain, dns_dict):
         self.cdn_list = []
-        self.key = {"cname": [], "http_header": [], "tls_cert": [], "rdap_info": []}
+        # self.off_net = []
+        # self.dns_hijack = []
+        self.key = {"cname": [], "http_header": [], "tls_cert": [], "rdap_info": [], "off_net": [], "web_hosting":False}
+        # ip_cdn_map = {}
         rdap_cdn = {}
         count_ip = sum(len(item) for key, item in dns_dict.items())
 
@@ -307,15 +316,21 @@ class CdnDetect:
                     if ki == "http_header":
                         with lock:
                             self.cdn_list.extend(cdn)
+                            # ip_cdn_map[ip] = cdn
                     elif ki == "tls_cert":
                         with lock:
                             self.cdn_list.append(cdn)
+                            # ip_cdn_map[ip] = cdn
                     elif ki == "rdap_info":
                         with lock:
                             if cdn in rdap_cdn:
                                 rdap_cdn[cdn] += 1
+                                # ip_cdn_map[ip] = cdn
                             else:
                                 rdap_cdn[cdn] = 1
+                                # ip_cdn_map[ip] = cdn
+                    # else:
+                    #     ip_cdn_map[ip] = None
 
                 for ip in ip_list:
                     thread = threading.Thread(target=multi_thread, args=(ip,))
@@ -343,9 +358,16 @@ class CdnDetect:
         for index, number in rdap_cdn.items():
             if number > count_ip / 2:
                 self.cdn_list.append(index)
+        if len(self.cdn_list) != 0:
+            # self.key["dns_hijack"] = [x for x,y in ip_cdn_map.items() if y==None]
+            # for ip, cdn in ip_cdn_map.items():
+            #     if cdn == None
         if self.web_hosting(dns_dict):
+            self.key["web_hosting"] = True
             return [cdn + " (likely hosted on cloud)" for cdn in list(set(self.cdn_list))]
         return list(set(self.cdn_list))
+
+
 
     def identify_cdn(self, domain, dns_dict):
         self.cdn_list = []
