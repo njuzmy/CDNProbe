@@ -31,7 +31,7 @@ class DnsResolve:
         cname_prefix = {}
         for prefix in self.comvp:
             dns_message = self.resolve(domain, prefix)
-            print(dns_message)
+            #print(dns_message)
             if dns_message != None:
                 cname, ip = self.result(json.loads(dns_message))
                 if cname in cname_prefix.keys():
@@ -39,6 +39,7 @@ class DnsResolve:
                         cname_prefix[cname].append(ip)
                 elif ip is not None:
                     cname_prefix[cname] = [ip]
+                self.dnsrecord[prefix] = cname
         return cname_prefix
 
     def result(self, dns_message):
@@ -104,6 +105,7 @@ class DnsResolve:
                             cname_prefix[cname].append(ip)
                     elif ip is not None:
                         cname_prefix[cname] = [ip]
+                    self.dnsrecord[prefix] = cname
 
         threads = []
         for prefix in self.comvp:
@@ -131,6 +133,7 @@ class DnsResolve:
         ip_number = {}
         lock = threading.Lock()
         stop_signal=False
+        self.dnsrecord={}
 
         def is_stopped():
             return stop_signal
@@ -165,6 +168,8 @@ class DnsResolve:
             elif ip is not None:
                 with lock:
                     cname_prefix[cname] = [ip]
+            with lock:
+                self.dnsrecord[prefix] = cname
             if ip in ip_number.keys():
                 ip_number[ip] += 1
             else:

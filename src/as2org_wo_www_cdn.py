@@ -9,7 +9,7 @@ import time
 import os
 
 asndb = pyasn.pyasn('../resource/20230101asb.db')
-base_dirpath = "../result/as2org_ans"
+base_dirpath = "../result/as2org_wo_ans"
 os.makedirs(base_dirpath,exist_ok=True)
 
 class As2Org():
@@ -74,7 +74,6 @@ if __name__ == "__main__":
     cnt=1
     try:
         for website in websites:
-            website = "www."+website
 
             print(f"{cnt}/{len(websites)}")
             print(website)
@@ -85,7 +84,7 @@ if __name__ == "__main__":
             result = a.identify_cdn(d.yzx_process_resolve(website)[0])
             result_dict[website] = a.as_info
             result_dict[website]["cdn"] = result
-            with open(os.path.join(base_dirpath,f"9-26_{time.time()}.json"),'w') as f:
+            with open(os.path.join(base_dirpath,f"10-8_{time.time()}.json"),'w') as f:
                 json.dump(result_dict, f, indent=4)
     except Exception as e:
         print(e)
@@ -93,5 +92,5 @@ if __name__ == "__main__":
         # with open(os.path.join(base_dirpath,'ans_w_www.json'), 'w') as f:
         #     json.dump(result_dict, f, indent=4)
 
-    with open(os.path.join(base_dirpath,'as2org_w_www.json'), 'w') as f:
+    with open(os.path.join(base_dirpath,'as2org_wo_www.json'), 'w') as f:
             json.dump(result_dict, f, indent=4)
