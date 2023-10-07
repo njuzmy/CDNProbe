@@ -21,11 +21,25 @@ class DnsResolve:
     def resolve(self, domain, prefix=None):
         if prefix is not None:
             try:
-                dns_message = subprocess.check_output("echo %s | ./zdns/zdns A --client-subnet %s --name-servers %s" % (domain, prefix, self.resolver), shell=True).decode('utf-8', "ignore")
+                dns_message = subprocess.check_output("echo %s | ../zdns/zdns A --client-subnet %s --name-servers %s" % (domain, prefix, self.resolver), shell=True).decode('utf-8', "ignore")
                 return dns_message
             except Exception as e:
                 print(e)
                 return None
+
+    def zdns(self, domain):
+        cname_prefix = {}
+        for prefix in self.comvp:
+            dns_message = self.resolve(domain, prefix)
+            print(dns_message)
+            if dns_message != None:
+                cname, ip = self.result(json.loads(dns_message))
+                if cname in cname_prefix.keys():
+                    if ip not in cname_prefix[cname] and ip is not None:
+                        cname_prefix[cname].append(ip)
+                elif ip is not None:
+                    cname_prefix[cname] = [ip]
+        return cname_prefix
 
     def result(self, dns_message):
         if dns_message['status'] == "NOERROR" and "answers" in dns_message["data"].keys():
@@ -75,19 +89,21 @@ class DnsResolve:
             try:
                 # print(domain, prefix, self.resolver)
                 # TODO
-                dns_message = subprocess.check_output("echo %s | ./zdns/zdns A --client-subnet %s --name-servers %s" % (domain, prefix, self.resolver), shell=True).decode('utf-8', "ignore")
+                dns_message = subprocess.check_output("echo %s | ../zdns/zdns A --client-subnet %s --name-servers %s" % (domain, prefix, self.resolver), shell=True).decode('utf-8', "ignore")
             except Exception as e:
                 print(e)
                 dns_message = None
 
             with lock:
+                print(dns_message)
                 # dnsresults.append(json.loads(dns_message))
-                cname, ip = self.result(json.loads(dns_message))
-                if cname in cname_prefix.keys():
-                    if ip not in cname_prefix[cname] and ip is not None:
-                        cname_prefix[cname].append(ip)
-                elif ip is not None:
-                    cname_prefix[cname] = [ip]
+                if dns_message != None:
+                    cname, ip = self.result(json.loads(dns_message))
+                    if cname in cname_prefix.keys():
+                        if ip not in cname_prefix[cname] and ip is not None:
+                            cname_prefix[cname].append(ip)
+                    elif ip is not None:
+                        cname_prefix[cname] = [ip]
 
         threads = []
         for prefix in self.comvp:
@@ -165,7 +181,16 @@ class DnsResolve:
         while True:
             time.sleep(0.2)
             exit_counter = 0
-            
+            # for i in range(len(dnsresults)):
+            #     if isinstance(dnsresults[i], dict):
+            #         done_counter+=1
+            #     exit_counter = 0
+
+
+
+
+
+
             for thread in threads:
                 if not thread.is_alive():
                     exit_counter += 1
@@ -197,20 +222,3 @@ class DnsResolve:
                     cname_prefix[cname] = [ip]
 
         return cname_prefix
-
-    # def dns_result_prefix_vp(self,domain,vplist):
-# if __name__ == "__main__":
-#     mydns = DnsResolve("prefix1.txt")
-#     starttime = time.time()
-#     result1 = mydns.process_resolve("www.apple.com")
-#     print(time.time()-starttime)
-#     print(result1)
-#     starttime = time.time()
-#     result = mydns.dns_result_prefix("www.apple.com")
-#     print(time.time()-starttime)
-#     print(result)
-
-    # if result == result1:
-    #     print("same")
-    # else:
-    #     print("different")

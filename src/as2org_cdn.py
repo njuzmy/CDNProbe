@@ -68,7 +68,8 @@ class As2Org():
             return list(set(self.cdn_list))
 
 if __name__ == "__main__":
-    websites = pd.read_csv("../resource/top-1m.csv")["domain"][0:10000].to_list()
+    websites = pd.read_csv("../resource/top-1m.csv")["domain"][9997:10000].to_list()
+    print(websites)
     result_dict = {}
     cnt=1
     try:
@@ -84,12 +85,13 @@ if __name__ == "__main__":
             result = a.identify_cdn(d.yzx_process_resolve(website)[0])
             result_dict[website] = a.as_info
             result_dict[website]["cdn"] = result
-            # with open(os.path.join(base_dirpath,f"9-26_{time.time()}.json"),'w') as f:
-            #     json.dump(result_dict, f, indent=4)
+            with open(os.path.join(base_dirpath,f"9-26_{time.time()}.json"),'w') as f:
+                json.dump(result_dict, f, indent=4)
     except Exception as e:
         print(e)
-        with open(os.path.join(base_dirpath,'ans_w_www.json'), 'w') as f:
-            json.dump(result_dict, f, indent=4)
+        print(website)
+        # with open(os.path.join(base_dirpath,'ans_w_www.json'), 'w') as f:
+        #     json.dump(result_dict, f, indent=4)
 
-    with open(os.path.join(base_dirpath,'ans_w_www.json'), 'w') as f:
+    with open(os.path.join(base_dirpath,'as2org_w_www.json'), 'w') as f:
             json.dump(result_dict, f, indent=4)
