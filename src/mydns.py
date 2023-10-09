@@ -161,19 +161,19 @@ class DnsResolve:
 
             # dnsresults.append(json.loads(dns_message))
             # cname, ip = self.result(json.loads(dns_message))
-            if cname in cname_prefix.keys():
-                if ip not in cname_prefix[cname] and ip is not None:
+                if cname in cname_prefix.keys():
+                    if ip not in cname_prefix[cname] and ip is not None:
+                        with lock:
+                            cname_prefix[cname].append(ip)
+                elif ip is not None:
                     with lock:
-                        cname_prefix[cname].append(ip)
-            elif ip is not None:
+                        cname_prefix[cname] = [ip]
                 with lock:
-                    cname_prefix[cname] = [ip]
-            with lock:
-                self.dnsrecord[prefix] = cname
-            if ip in ip_number.keys():
-                ip_number[ip] += 1
-            else:
-                ip_number[ip] = 1
+                    self.dnsrecord[prefix] = cname
+                if ip in ip_number.keys():
+                    ip_number[ip] += 1
+                else:
+                    ip_number[ip] = 1
 
         
         threads = []

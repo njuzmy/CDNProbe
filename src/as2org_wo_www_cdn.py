@@ -68,9 +68,9 @@ class As2Org():
             return list(set(self.cdn_list))
 
 if __name__ == "__main__":
-    websites = pd.read_csv("../resource/top-1m.csv")["domain"][0:10000].to_list()
+    websites = pd.read_csv("../resource/top-1m.csv")["domain"][9350:10000].to_list()
     print(websites)
-    result_dict = {}
+    result_dict = json.load(open("../result/as2org_wo_ans/10-8_1696823223.55673.json"))
     cnt=1
     try:
         for website in websites:
