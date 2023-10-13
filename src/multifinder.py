@@ -278,7 +278,7 @@ class CdnDetect:
 
         if len(http_header_cdn) != 0:
             self.key["http_header"].append(http_key_header)
-            if rdap_info_cdn == None:
+            if rdap_info_cdn == None or rdap_info_cdn not in http_header_cdn:
                 self.key["off_net"].append(ip)
             return "http_header", http_header_cdn
         elif cert_info_cdn is not None:
@@ -296,7 +296,7 @@ class CdnDetect:
 
     def web_hosting(self, dns_dict):
         count_ip = sum(len(item) for key, item in dns_dict.items())
-        anycast_cdn = ["cloudflare", "imperva", "edgio", "fastly", "microsoft", "cloudfront"]
+        anycast_cdn = ["cloudflare", "imperva", "edgio", "fastly", "microsoft", "cloudfront","ovh"]
         if count_ip == 1:
             if len(self.cdn_list) > 0 and self.cdn_list[0] not in anycast_cdn:
                 return True
