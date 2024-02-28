@@ -81,7 +81,7 @@ if __name__ == "__main__":
 
             d = mydns.DnsResolve("../resource/prefix1.txt")
             a = As2Org()
-            result = a.identify_cdn(d.yzx_process_resolve(website)[0])
+            result = a.identify_cdn(d.process_resolve(website)[0])
             result_dict[website] = a.as_info
             result_dict[website]["cdn"] = result
             with open(os.path.join(base_dirpath,f"10-8_{time.time()}.json"),'w') as f:

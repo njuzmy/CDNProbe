@@ -4,7 +4,7 @@ __pycache__/
 *$py.class
 .ipynb_checkpoints/
 
-# ans/
+ans/
 tmp/
 result/
 fig/

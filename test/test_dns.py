@@ -56,7 +56,7 @@ inconsist_domain = []
 for domain in test_domain[35:]:
     zdns_result = d.zdns(domain)
     zdns_prefix = d.dnsrecord
-    dig_result, ip_number = d.yzx_process_resolve(domain)
+    dig_result, ip_number = d.process_resolve(domain)
     dig_prefix = d.dnsrecord
     # print(zdns_result.keys())
     # print(dig_result.keys())

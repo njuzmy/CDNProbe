@@ -302,7 +302,7 @@ class CdnDetect:
                 return True
         return False
 
-    def yzx_identify_cdn(self, domain, dns_dict):
+    def identify_cdn(self, domain, dns_dict):
         self.cdn_list = []
         # self.off_net = []
         # self.dns_hijack = []
@@ -375,42 +375,5 @@ class CdnDetect:
             #     if cdn == None
         if self.web_hosting(dns_dict):
             self.key["web_hosting"] = True
-            return [cdn + " (likely hosted on cloud)" for cdn in list(set(self.cdn_list))]
-        return list(set(self.cdn_list))
-
-
-
-    def identify_cdn(self, domain, dns_dict):
-        self.cdn_list = []
-        self.key = {"cname": [], "http_header": [], "tls_cert": [], "rdap_info": []}
-        rdap_cdn = {}
-        count_ip = sum(len(item) for key, item in dns_dict.items())
-
-        for cname, ip_list in dns_dict.items():
-
-            flag, cdn = self.cname(cname)
-
-            if flag == True:
-                self.cdn_list.append(cdn)
-                self.key["cname"].append(cname)
-                count_ip -= len(ip_list)
-            else:
-                for ip in ip_list:
-                    ki, cdn = self.identify_cdn_byip(domain, ip)
-
-                    if ki == "http_header":
-                        self.cdn_list.extend(cdn)
-                    elif ki == "tls_cert":
-                        self.cdn_list.append(cdn)
-                    elif ki == "rdap_info":
-                        if cdn in rdap_cdn:
-                            rdap_cdn[cdn] += 1
-                        else:
-                            rdap_cdn[cdn] = 1
-
-        for index, number in rdap_cdn.items():
-            if number > count_ip / 2:
-                self.cdn_list.append(index)
-        if self.web_hosting(dns_dict):
             return [cdn + " (likely hosted on cloud)" for cdn in list(set(self.cdn_list))]
         return list(set(self.cdn_list))

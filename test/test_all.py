@@ -11,30 +11,31 @@ import os
 import asyncio
 from concurrent.futures.thread import ThreadPoolExecutor
 
-def func(website):
-    d = mydns.DnsResolve(get_resource_path("prefix1.txt"))
-    cdn = multifinder.CdnDetect(get_resource_path("cname_cache.json"),get_resource_path("cdnlist.txt"))
-    # dns_dict = d.process_resolve(website)
-    # dns_dict, ip_number = d.yzx_process_resolve(website)
-    dns_dict, ip_number = asyncio.run(d.async_process_resolve(website,"8.8.8.8"))
-    print(dns_dict)
-    # result = cdn.pidentify_cdn(website,dns_dict)
-    result = cdn.yzx_identify_cdn(website,dns_dict)
-
-    key = cdn.key
-    return (result, key, ip_number)
-    
-
 ans_dirpath="../ans"
 tmp_dirpath="../tmp"
 res_dirpath="../resource"
+www_prefix_enabled = True
+
+
+def find(website):
+    d = mydns.DnsResolve(get_resource_path("prefix1.txt"))
+    cdn = multifinder.CdnDetect(get_resource_path("cname_cache.json"),get_resource_path("cdnlist.txt"))
+
+    # dns_dict, ip_number = d.process_resolve(website)
+    dns_dict, ip_number = asyncio.run(d.async_process_resolve(website,"8.8.8.8"))
+    print(dns_dict)
+
+    result = cdn.identify_cdn(website,dns_dict)
+    key = cdn.key
+    return (result, key, ip_number)
+    
 
 def get_resource_path(filename):
     return os.path.join(res_dirpath,filename)
 
 
 if __name__ == "__main__":
-    websites = pd.read_csv(get_resource_path("top-1m.csv"))["domain"][0:10].to_list()
+    websites = pd.read_csv(get_resource_path("top-1m.csv"))["domain"][0:10000].to_list()
 
     stime = time.time()
 
@@ -44,13 +45,13 @@ if __name__ == "__main__":
     result_dict = {}
     cnt=1
     for website in websites:
-        website = "www."+website
+        website = ("www." if www_prefix_enabled else "") + website
 
         print("\n"*2)
         print(f"{cnt}/{len(websites)}")
         print(website)
         cnt+=1
-        result = func(website)
+        result = find(website)
         print(result)
         result_dict[website] = result[1]
         result_dict[website]['cdn'] = result[0]

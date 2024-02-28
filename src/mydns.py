@@ -43,23 +43,6 @@ class DnsResolve:
         return cname_prefix
 
     def result(self, dns_message):
-        if dns_message['status'] == "NOERROR" and "answers" in dns_message["data"].keys():
-            rr = [v["type"] for k, v in enumerate(dns_message["data"]["answers"]) if 'type' in v.keys()]
-            if "CNAME" in rr:
-                cname_index = [k for k, v in enumerate(dns_message["data"]['answers']) if v['type'] == "CNAME"]
-                cname = dns_message['data']['answers'][cname_index[-1]]['answer']  # get the last CNAME
-            else:
-                cname = None
-            if "A" in rr:
-                a_index = [k for k, v in enumerate(dns_message["data"]['answers']) if v['type'] == "A"]
-                ip = dns_message['data']['answers'][a_index[0]]['answer']  # get A record of the domain
-            else:
-                ip = None
-            return (cname, ip)
-        else:
-            return (None, None)
-
-    def yzx_result(self, dns_message):
         if ";ANSWER" in dns_message:
             lines = dns_message.split("\n")
             is_in_answer = False
@@ -83,52 +66,6 @@ class DnsResolve:
             return (None, None)
 
     def process_resolve(self, domain):
-        cname_prefix = {}
-        lock = threading.Lock()
-
-        def resolve(domain, prefix):
-            try:
-                # print(domain, prefix, self.resolver)
-                # TODO
-                dns_message = subprocess.check_output("echo %s | ../zdns/zdns A --client-subnet %s --name-servers %s" % (domain, prefix, self.resolver), shell=True).decode('utf-8', "ignore")
-            except Exception as e:
-                print(e)
-                dns_message = None
-
-            with lock:
-                print(dns_message)
-                # dnsresults.append(json.loads(dns_message))
-                if dns_message != None:
-                    cname, ip = self.result(json.loads(dns_message))
-                    if cname in cname_prefix.keys():
-                        if ip not in cname_prefix[cname] and ip is not None:
-                            cname_prefix[cname].append(ip)
-                    elif ip is not None:
-                        cname_prefix[cname] = [ip]
-                    self.dnsrecord[prefix] = cname
-
-        threads = []
-        for prefix in self.comvp:
-            thread = threading.Thread(target=resolve, args=(domain, prefix))
-            threads.append(thread)
-            thread.start()
-
-        while True:
-            time.sleep(0.2)
-            exit_counter = 0
-            # for i in range(len(dnsresults)):
-            #     if isinstance(dnsresults[i], dict):
-            #         done_counter+=1
-            #     exit_counter = 0
-            for thread in threads:
-                if not thread.is_alive():
-                    exit_counter += 1
-
-            if exit_counter == len(self.comvp):
-                break
-        return cname_prefix
-
-    def yzx_process_resolve(self, domain):
         cname_prefix = {}
         ip_number = {}
         lock = threading.Lock()
@@ -157,7 +94,7 @@ class DnsResolve:
 
             # TODO TODO
             if dns_message is not None:
-                cname, ip = self.yzx_result(dns_message.to_text())
+                cname, ip = self.result(dns_message.to_text())
 
             # dnsresults.append(json.loads(dns_message))
             # cname, ip = self.result(json.loads(dns_message))
