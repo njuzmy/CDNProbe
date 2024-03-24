@@ -10,8 +10,9 @@ def cdn_to_domain(filename, ans={}):
         txt = json.load(f)
     for domain, v in txt.items():
         cdns = v["cdn"]
-        if len(cdns) >1:
+        if len(cdns) > 1:
             print(domain)
+            continue
         for cdn in cdns:
             ans.setdefault(cdn, set())
             ans[cdn].add(domain)
