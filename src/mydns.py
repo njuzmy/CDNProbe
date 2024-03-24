@@ -6,6 +6,7 @@ import dns
 import clientsubnetoption
 import asyncio
 
+
 class DnsResolve:
     def __init__(self, file=None, resolver='223.5.5.5') -> None:
         self.resolver = resolver
@@ -21,7 +22,8 @@ class DnsResolve:
     def resolve(self, domain, prefix=None):
         if prefix is not None:
             try:
-                dns_message = subprocess.check_output("echo %s | ../zdns/zdns A --client-subnet %s --name-servers %s" % (domain, prefix, self.resolver), shell=True).decode('utf-8', "ignore")
+                dns_message = subprocess.check_output("echo %s | ../zdns/zdns A --client-subnet %s --name-servers %s" % (
+                    domain, prefix, self.resolver), shell=True).decode('utf-8', "ignore")
                 return dns_message
             except Exception as e:
                 print(e)
@@ -31,7 +33,7 @@ class DnsResolve:
         cname_prefix = {}
         for prefix in self.comvp:
             dns_message = self.resolve(domain, prefix)
-            #print(dns_message)
+            # print(dns_message)
             if dns_message != None:
                 cname, ip = self.result(json.loads(dns_message))
                 if cname in cname_prefix.keys():
@@ -65,12 +67,12 @@ class DnsResolve:
         else:
             return (None, None)
 
-    def process_resolve(self, domain):
+    def process_resolve(self, domain, qtype="A"):
         cname_prefix = {}
         ip_number = {}
         lock = threading.Lock()
-        stop_signal=False
-        self.dnsrecord={}
+        stop_signal = False
+        self.dnsrecord = {}
 
         def is_stopped():
             return stop_signal
@@ -82,22 +84,20 @@ class DnsResolve:
                 # TODO TODO
                 subnet = prefix.strip(" '").split('/')[0]
                 cso = clientsubnetoption.ClientSubnetOption(subnet)
-                message = dns.message.make_query(domain, 'A')
+                message = dns.message.make_query(domain, qtype)
                 message.use_edns(options=[cso])
                 dns_message = dns.query.udp(message, self.resolver)
 
             except Exception as e:
                 print(e)
                 dns_message = None
+            # print(dns_message)
             if is_stopped():
                 return
 
             # TODO TODO
             if dns_message is not None:
                 cname, ip = self.result(dns_message.to_text())
-
-            # dnsresults.append(json.loads(dns_message))
-            # cname, ip = self.result(json.loads(dns_message))
                 if cname in cname_prefix.keys():
                     if ip not in cname_prefix[cname] and ip is not None:
                         with lock:
@@ -112,7 +112,6 @@ class DnsResolve:
                 else:
                     ip_number[ip] = 1
 
-        
         threads = []
         for prefix in self.comvp:
             thread = threading.Thread(target=resolve, args=(domain, prefix))
@@ -123,47 +122,39 @@ class DnsResolve:
         while True:
             time.sleep(0.2)
             exit_counter = 0
-            # for i in range(len(dnsresults)):
-            #     if isinstance(dnsresults[i], dict):
-            #         done_counter+=1
-            #     exit_counter = 0
-
-
-
-
-
 
             for thread in threads:
                 if not thread.is_alive():
                     exit_counter += 1
             print("\r", end="")
-            print("%-10s Time:%.1f" % ("DNS",time.time() - stime), "progress: %5.1f%% %d/%d: " % ((exit_counter / self.comvplen) * 100, exit_counter, self.comvplen), "▋" * (exit_counter * 50 // self.comvplen), end="")
+            print("%-10s Time:%.1f" % ("DNS", time.time() - stime), "progress: %5.1f%% %d/%d: " % ((exit_counter /
+                  self.comvplen) * 100, exit_counter, self.comvplen), "▋" * (exit_counter * 50 // self.comvplen), end="")
 
             if exit_counter == len(self.comvp):
                 break
-            if (time.time() - stime)>2 and (exit_counter / self.comvplen)> 0.99:
+            if (time.time() - stime) > 2 and (exit_counter / self.comvplen) > 0.99:
                 break
-            if (time.time() - stime)>10 and (exit_counter / self.comvplen)> 0.95:
+            if (time.time() - stime) > 10 and (exit_counter / self.comvplen) > 0.95:
                 break
-            if (time.time() - stime)>30:                
+            if (time.time() - stime) > 30:
                 break
         stop_signal = True
         print()
         return cname_prefix, ip_number
 
-
-    async def async_process_resolve(self, domain,resolver):
+    async def async_process_resolve(self, domain, resolver):
         cname_prefix = {}
         ip_number = {}
-        self.dnsrecord={}
+        self.dnsrecord = {}
 
         async def async_resolve(domain, prefix):
             try:
                 subnet = dns.edns.ECSOption.from_text(prefix.strip(" '"))
-                message = dns.message.make_query(domain, 'A', use_edns=0,options=[subnet])
-                dns_message = await dns.asyncquery.udp(message, resolver,timeout=10)
+                message = dns.message.make_query(
+                    domain, 'A', use_edns=0, options=[subnet])
+                dns_message = await dns.asyncquery.udp(message, resolver, timeout=10)
 
-            except Exception as e:  
+            except Exception as e:
                 # print(repr(e))
                 return None
 
@@ -171,14 +162,14 @@ class DnsResolve:
                 cname, ip = self.yzx_result(dns_message.to_text())
             else:
                 return None
-            
-            return prefix,cname,ip
+
+            return prefix, cname, ip
 
         threads = []
         for prefix in self.comvp:
-            threads.append(asyncio.create_task(async_resolve(domain,prefix)))
+            threads.append(asyncio.create_task(async_resolve(domain, prefix)))
         stime = time.time()
-        exit_counter = 0    
+        exit_counter = 0
         while True:
             done, pending = await asyncio.wait(threads, timeout=0.2, return_when=asyncio.FIRST_COMPLETED)
 
@@ -186,28 +177,28 @@ class DnsResolve:
             for thread in done:
                 x = await thread
                 if x:
-                    prefix,cname,ip=x
-                    cname_prefix.setdefault(cname,set()).add(ip)
-                    self.dnsrecord[prefix]=cname
-                    ip_number[ip]=ip_number.setdefault(ip,0)+1
+                    prefix, cname, ip = x
+                    cname_prefix.setdefault(cname, set()).add(ip)
+                    self.dnsrecord[prefix] = cname
+                    ip_number[ip] = ip_number.setdefault(ip, 0)+1
             threads = pending
             print("\r", end="")
-            print("%-10s Time:%.1f" % ("DNS",time.time() - stime), "progress: %5.1f%% %d/%d: " % ((exit_counter / self.comvplen) * 100, exit_counter, self.comvplen), "▋" * (exit_counter * 50 // self.comvplen), end="")
+            print("%-10s Time:%.1f" % ("DNS", time.time() - stime), "progress: %5.1f%% %d/%d: " % ((exit_counter /
+                  self.comvplen) * 100, exit_counter, self.comvplen), "▋" * (exit_counter * 50 // self.comvplen), end="")
 
             if exit_counter == len(self.comvp):
                 break
-            if (time.time() - stime)>2 and (exit_counter / self.comvplen)> 0.99:
+            if (time.time() - stime) > 2 and (exit_counter / self.comvplen) > 0.99:
                 break
-            if (time.time() - stime)>10 and (exit_counter / self.comvplen)> 0.95:
+            if (time.time() - stime) > 10 and (exit_counter / self.comvplen) > 0.95:
                 break
-            if (time.time() - stime)>30:                
+            if (time.time() - stime) > 30:
                 break
-        
+
         for thread in pending:
             thread.cancel()
         print()
         return cname_prefix, ip_number
-
 
     def dns_result_prefix(self, domain):  # unify the formats for analyze
         cname_prefix = {}
