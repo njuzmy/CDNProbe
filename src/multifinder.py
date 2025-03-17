@@ -269,11 +269,16 @@ class CdnDetect:
             cert_info_cdn = None
 
         rdap_info = self.download_info_using_rdap_cache(ip)
+
         if rdap_info is not None:
             # get useful information of rdap info
             extracted_rdap_info = self.extract_rdap_info(rdap_info)
             if extracted_rdap_info is not None:
                 rdap_info_cdn = self.rdap(extracted_rdap_info)
+            else:
+                rdap_info_cdn = None
+        else:
+            rdap_info_cdn = None
                 
 
         if len(http_header_cdn) != 0:

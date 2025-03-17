@@ -13,6 +13,7 @@ from concurrent.futures.thread import ThreadPoolExecutor
 
 tmp_dirpath = "../tmp"
 res_dirpath = "../resource"
+ans_dirpath = "../ans"
 www_prefix_enabled = False
 
 
@@ -45,6 +46,7 @@ if __name__ == "__main__":
 
     result_dict = {}
     cnt = 1
+    prev_tmp_name = None
     for website in websites:
         website = ("www." if www_prefix_enabled else "") + website
 
@@ -57,8 +59,12 @@ if __name__ == "__main__":
         result_dict[website] = result[1]
         result_dict[website]['cdn'] = result[0]
         result_dict[website]['dns'] = result[2]
-        with open(os.path.join(tmp_dirpath, f'{time.time()}.json'), "w")as f:
+        tmp_name = f"{time.time()}.json"
+        with open(os.path.join(tmp_dirpath, tmp_name), "w")as f:
             json.dump(result_dict, f, indent=4)
+        if prev_tmp_name is not None:
+            os.remove(os.path.join(tmp_dirpath, prev_tmp_name))
+        prev_tmp_name = tmp_name
 
     with open(os.path.join(ans_dirpath, 'ans.json'), 'w') as f:
         json.dump(result_dict, f, indent=4)
