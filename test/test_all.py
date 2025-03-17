@@ -14,7 +14,7 @@ from concurrent.futures.thread import ThreadPoolExecutor
 tmp_dirpath = "../tmp"
 res_dirpath = "../resource"
 ans_dirpath = "../ans"
-www_prefix_enabled = False
+www_prefix_enabled = True
 
 
 def find(website):
@@ -66,7 +66,8 @@ if __name__ == "__main__":
             os.remove(os.path.join(tmp_dirpath, prev_tmp_name))
         prev_tmp_name = tmp_name
 
-    with open(os.path.join(ans_dirpath, 'ans.json'), 'w') as f:
+    ans_name = time.strftime("%Y%m%d") + ("_ans_www.json" if www_prefix_enabled else "_ans_no_www.json")
+    with open(os.path.join(ans_dirpath, ans_name), 'w') as f:
         json.dump(result_dict, f, indent=4)
     print(time.time() - stime)
     exit(0)
