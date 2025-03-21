@@ -1,4 +1,4 @@
-import mydns
+import dnsResolver
 import multifinder
 import time
 import threading
@@ -12,9 +12,9 @@ def parallel(websites):
     result_dict = {}
 
     def multi_thread(website):
-        d = mydns.DnsResolve("prefix1.txt")
+        d = dnsResolver.DnsResolve("prefix1.txt")
         cdn = multifinder.CdnDetect("cname_cache.json","../top1m-multi-cdn/cdnlist.txt")
-        dns_dict = d.process_resolve(website)
+        dns_dict = d.query_and_resolve_with_subnets(website)
         result = cdn.identify_cdn(website,dns_dict)
         with lock:
             result_dict[website] = result
@@ -38,7 +38,7 @@ def parallel(websites):
     return result_dict
 
 def fun(website):
-    d = mydns.DnsResolve("prefix1.txt")
+    d = dnsResolver.DnsResolve("prefix1.txt")
     cdn = multifinder.CdnDetect("cname_cache.json","cdnlist.txt")
     # dns_dict = d.process_resolve(website)
     dns_dict, ip_number = d.yzx_process_resolve(website)

@@ -3,13 +3,13 @@ import json
 import jsonlines
 import requests
 import pyasn
-import mydns
+import dnsResolver
 import pandas as pd
 import time
 import os
 
 asndb = pyasn.pyasn('../resource/20230101asb.db')
-base_dirpath = "../result/as2org_wo_ans"
+base_dirpath = "../result/as2org_ans"
 os.makedirs(base_dirpath,exist_ok=True)
 
 class As2Org():
@@ -68,23 +68,24 @@ class As2Org():
             return list(set(self.cdn_list))
 
 if __name__ == "__main__":
-    websites = pd.read_csv("../resource/top-1m.csv")["domain"][9350:10000].to_list()
-    print(websites)
-    result_dict = json.load(open("../result/as2org_wo_ans/10-8_1696823223.55673.json"))
+    websites = pd.read_csv("../resource/top-1m.csv")["domain"][2608:10000].to_list()
+    # print(websites)
+    result_dict = json.load(open("../result/as2org_ans/9-26_1696770254.007474.json"))
     cnt=1
     try:
         for website in websites:
+            website = "www."+website
 
             print(f"{cnt}/{len(websites)}")
             print(website)
             cnt+=1
 
-            d = mydns.DnsResolve("../resource/prefix1.txt")
+            d = DnsResolver.DnsResolver("../resource/prefix1.txt")
             a = As2Org()
-            result = a.identify_cdn(d.process_resolve(website)[0])
+            result = a.identify_cdn(d.query_and_resolve_with_subnets(website)[0])
             result_dict[website] = a.as_info
             result_dict[website]["cdn"] = result
-            with open(os.path.join(base_dirpath,f"10-8_{time.time()}.json"),'w') as f:
+            with open(os.path.join(base_dirpath,f"9-26_{time.time()}.json"),'w') as f:
                 json.dump(result_dict, f, indent=4)
     except Exception as e:
         print(e)
@@ -92,5 +93,5 @@ if __name__ == "__main__":
         # with open(os.path.join(base_dirpath,'ans_w_www.json'), 'w') as f:
         #     json.dump(result_dict, f, indent=4)
 
-    with open(os.path.join(base_dirpath,'as2org_wo_www.json'), 'w') as f:
+    with open(os.path.join(base_dirpath,'as2org_w_www.json'), 'w') as f:
             json.dump(result_dict, f, indent=4)

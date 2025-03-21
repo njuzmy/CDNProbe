@@ -6,5 +6,6 @@ __pycache__/
 
 ans/
 tmp/
+tmp_old/
 result/
 fig/

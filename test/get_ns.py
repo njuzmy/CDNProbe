@@ -5,7 +5,7 @@ from src.utils import query_and_resolve
 import os
 import json
 from src import multifinder
-from src import mydns
+from src import dnsResolver
 import dns
 import clientsubnetoption
 import signal

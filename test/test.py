@@ -1,6 +1,6 @@
 import sys
 sys.path.append("..")
-from src import mydns
+from src import dnsResolver
 from src import multifinder
 
 import time
@@ -16,10 +16,10 @@ res_dirpath="../resource"
 
 
 def find(website):
-    d = mydns.DnsResolve(get_resource_path("prefix1.txt"))
+    d = dnsResolver.DnsResolve(get_resource_path("prefix1.txt"))
     cdn = multifinder.CdnDetect(get_resource_path("cname_cache.json"),get_resource_path("cdnlist.txt"))
 
-    dns_dict, ip_number = d.process_resolve(website)
+    dns_dict, ip_number = d.query_and_resolve_with_subnets(website)
     print(dns_dict)
 
     result = cdn.identify_cdn(website,dns_dict)

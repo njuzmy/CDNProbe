@@ -51,13 +51,13 @@ test_domain = ['www.jd.com',
  'www.thermofisher.com',
  'www.abcam.cn']
 # test_domain=["www.redhat.com"]
-d = src.mydns.DnsResolve("../resource/test_prefix.txt")
+d = src.dnsResolver.DnsResolve("../resource/test_prefix.txt")
 inconsist_domain = []
 for domain in test_domain[35:]:
     zdns_result = d.zdns(domain)
-    zdns_prefix = d.dnsrecord
-    dig_result, ip_number = d.process_resolve(domain)
-    dig_prefix = d.dnsrecord
+    zdns_prefix = d.dns_record
+    dig_result, ip_number = d.query_and_resolve_with_subnets(domain)
+    dig_prefix = d.dns_record
     # print(zdns_result.keys())
     # print(dig_result.keys())
     if zdns_result.keys()!=dig_result.keys():

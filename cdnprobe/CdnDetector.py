@@ -12,13 +12,15 @@ from netaddr import IPNetwork
 import intervaltree
 import sys
 
+from cdnprobe.utils import create_progress
+
 resource_dirpath = "../resource"
 def get_resource_path(filename):
     return os.path.join(resource_dirpath,filename)
 
 
-class CdnDetect:
-    def __init__(self, cname_file=None, cdn_file=None) -> None:
+class CdnDetector:
+    def __init__(self, filepath_cname=None, filepath_cdn=None) -> None:
         self.key = {"cname": [],
                     "http_header": [],
                     "tls_cert": [],
@@ -29,10 +31,10 @@ class CdnDetect:
         self.rdap_cache_ip = {}
         self.rdap_refresh = 60 * 60 * 24
         self.rdap_cache = intervaltree.IntervalTree()
-        self.cname_cache = json.load(open(cname_file, 'r'))
+        self.cname_cache = json.load(open(filepath_cname, 'r'))
         self.off_net = []
         self.dns_hijack = []
-        with open(cdn_file, 'r') as file:
+        with open(filepath_cdn, 'r') as file:
             for line in file.readlines():
                 self.cdn_total.append(line.strip().lower())
 
@@ -354,21 +356,22 @@ class CdnDetect:
                     thread.start()
 
                 stime = time.time()
+                
+                with create_progress() as progress:
+                    progress_task = progress.add_task("CDN Detection", total=len(ip_list))
+                    while True:
+                        time.sleep(0.2)
+                        exit_counter = 0
+                        for thread in threads:
+                            if not thread.is_alive():
+                                exit_counter += 1
+                        progress.update(progress_task, completed=exit_counter)
 
-                while True:
-                    time.sleep(0.2)
-                    exit_counter = 0
-                    for thread in threads:
-                        if not thread.is_alive():
-                            exit_counter += 1
-                    print("\r", end="")
-                    print("%-10s Time:%.1f" % ("CDN",time.time() - stime),"progress: %5.1f%% %d/%d: " % (exit_counter / len(ip_list) * 100,exit_counter,len(ip_list)), "▋" * (exit_counter * 50 // len(ip_list)), end="")
-
-                    sys.stdout.flush()
-                    if exit_counter == len(ip_list):
-                        break
-                    if (time.time() - stime)>60:
-                        break
+                        sys.stdout.flush()
+                        if exit_counter == len(ip_list):
+                            break
+                        if (time.time() - stime)>60:
+                            break
                 print()
                 
         for index, number in rdap_cdn.items():

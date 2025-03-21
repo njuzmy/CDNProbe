@@ -1,5 +1,7 @@
 import dns
 import clientsubnetoption
+from rich.progress import (BarColumn, MofNCompleteColumn, Progress, SpinnerColumn, TaskProgressColumn, TextColumn,
+                           TimeElapsedColumn, TimeRemainingColumn)
 
 
 def query_and_resolve(domain, qtype, iter=False, dns_server="223.5.5.5"):
@@ -52,3 +54,16 @@ def query_and_resolve(domain, qtype, iter=False, dns_server="223.5.5.5"):
     else:
         ans = query(domain, qtype)
     return ans
+
+
+def create_progress():
+    return Progress(
+        SpinnerColumn(),
+        MofNCompleteColumn(),
+        BarColumn(),
+        TaskProgressColumn(),
+        TimeElapsedColumn(),
+        "/",
+        TimeRemainingColumn(),
+        TextColumn("[progress.description]{task.description}")
+    )
