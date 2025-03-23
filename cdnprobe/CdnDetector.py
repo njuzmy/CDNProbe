@@ -1,27 +1,33 @@
+from concurrent import futures
+from concurrent.futures import ThreadPoolExecutor
 import json
-import subprocess
-import re
 import os
-import time
-import threading
-import ipwhois
+import queue
 import random
-import warnings
-from datetime import datetime
-from netaddr import IPNetwork
-import intervaltree
+import re
+import subprocess
 import sys
+import threading
+import time
+from turtle import done
+import warnings
+
+import intervaltree
+import ipwhois
+from netaddr import IPNetwork
 
 from cdnprobe.utils import create_progress
 
 resource_dirpath = "../resource"
-def get_resource_path(filename):
-    return os.path.join(resource_dirpath,filename)
+
+
+def FILEPATH_RESOURCE(filename):
+    return os.path.join(resource_dirpath, filename)
 
 
 class CdnDetector:
-    def __init__(self, filepath_cname=None, filepath_cdn=None) -> None:
-        self.key = {"cname": [],
+    def __init__(self, filepath_cname_cache: None = None, filepath_cdn: None = None) -> None:
+        self.keys = {"cname": [],
                     "http_header": [],
                     "tls_cert": [],
                     "rdap_info": []}
@@ -31,18 +37,19 @@ class CdnDetector:
         self.rdap_cache_ip = {}
         self.rdap_refresh = 60 * 60 * 24
         self.rdap_cache = intervaltree.IntervalTree()
-        self.cname_cache = json.load(open(filepath_cname, 'r'))
+        self.cname_cache = json.load(open(filepath_cname_cache, 'r'))
         self.off_net = []
         self.dns_hijack = []
         with open(filepath_cdn, 'r') as file:
             for line in file.readlines():
                 self.cdn_total.append(line.strip().lower())
 
-    def cname(self, cname=None):
+    def is_cached_cname(self, cname=None):
         if cname is None:
             return False, None
+
         for cdn, v in self.cname_cache.items():
-            for cdn_cname in v['cname_substring'].split(' '):
+            for cdn_cname in v['cname_substring']:
                 if cname.find(cdn_cname) != -1:
                     return True, cdn
         return False, None
@@ -52,21 +59,21 @@ class CdnDetector:
             # since some website may focus on one http protocol, so we crawl both http and https
             # print("curl -s -I https://%s -H 'Host:%s' -k " % (ip, domain))
             http_header = subprocess.check_output("curl -m 3 -s -IL %s -H 'Host:%s' -k " %
-                                                   (ip, domain), shell=True).decode('utf-8', "ignore")
+                                                  (ip, domain), shell=True).decode('utf-8', "ignore")
             https_header = subprocess.check_output("curl -m 3 -s -IL 'https://%s' -H 'Host:%s' -k " %
                                                    (ip, domain), shell=True).decode('utf-8', "ignore")
-            #status_code = subprocess.check_output("curl -m 3 -s -IL https://%s -H 'Host:%s' -k -o /dev/null -w %{http_code} " %
+            # status_code = subprocess.check_output("curl -m 3 -s -IL https://%s -H 'Host:%s' -k -o /dev/null -w %{http_code} " %
             #                                       (ip, domain), shell=True).decode('utf-8', "ignore")    #get http_code
-            #if status_code == 200:
+            # if status_code == 200:
             #    https_header = subprocess.check_output("curl -m 3 -s -IL https://%s -H 'Host:%s' -k " %
             #                                       (ip, domain), shell=True).decode('utf-8', "ignore")
-            
+
         except Exception as e:
             http_header = ""
-        #try:
+        # try:
         #    http_header = subprocess.check_output("curl -m 3 -s -IL http://%s -H 'Host:%s' -k " %
         #                                          (ip, domain), shell=True).decode('utf-8', "ignore")
-        #except Exception as e:
+        # except Exception as e:
         #    http_header = ""
         return http_header
 
@@ -94,7 +101,7 @@ class CdnDetector:
                 regex = regex.replace(k, v)
             return regex
 
-        patterns = json.load(open(get_resource_path("pattern.json"), 'r'))
+        patterns = json.load(open(FILEPATH_RESOURCE("pattern.json"), 'r'))
         regex = '''(%s)\\s*(:)\\s*(%s)\\s*,?'''
         cdns = []
         key_http_header = ""
@@ -281,18 +288,17 @@ class CdnDetector:
                 rdap_info_cdn = None
         else:
             rdap_info_cdn = None
-                
 
         if len(http_header_cdn) != 0:
-            self.key["http_header"].append(http_key_header)
-            if rdap_info_cdn == None or rdap_info_cdn not in http_header_cdn:
-                self.key["off_net"].append(ip)
+            self.keys["http_header"].append(http_key_header)
+            if rdap_info_cdn is None or rdap_info_cdn not in http_header_cdn:
+                self.keys["off_net"].append(ip)
             return "http_header", http_header_cdn
         elif cert_info_cdn is not None:
-            self.key["tls_cert"].append(cert_info)
+            self.keys["tls_cert"].append(cert_info)
             return "tls_cert", cert_info_cdn
         elif rdap_info_cdn is not None:
-            self.key["rdap_info"].append(extracted_rdap_info)
+            self.keys["rdap_info"].append(extracted_rdap_info)
             return "rdap_info", rdap_info_cdn
         # except Exception as e:
         #     print(e)
@@ -303,7 +309,7 @@ class CdnDetector:
 
     def web_hosting(self, dns_dict):
         count_ip = sum(len(item) for key, item in dns_dict.items())
-        anycast_cdn = ["cloudflare", "imperva", "edgio", "fastly", "microsoft", "cloudfront","ovh"]
+        anycast_cdn = ["cloudflare", "imperva", "edgio", "fastly", "microsoft", "cloudfront", "ovh"]
         if count_ip == 1:
             if len(self.cdn_list) > 0 and self.cdn_list[0] not in anycast_cdn:
                 return True
@@ -313,75 +319,92 @@ class CdnDetector:
         self.cdn_list = []
         # self.off_net = []
         # self.dns_hijack = []
-        self.key = {"cname": [], "http_header": [], "tls_cert": [], "rdap_info": [], "off_net": [], "web_hosting":False}
+        self.keys = {"cname": [], "http_header": [], "tls_cert": [], "rdap_info": [], "off_net": [], "web_hosting": False}
         # ip_cdn_map = {}
         rdap_cdn = {}
         count_ip = sum(len(item) for key, item in dns_dict.items())
 
         for cname, ip_list in dns_dict.items():
-            flag, cdn = self.cname(cname)
+            _is_cached_cname, cdn = self.is_cached_cname(cname)
 
-            if flag == True:
+            if _is_cached_cname == True:
                 self.cdn_list.append(cdn)
-                self.key["cname"].append(cname)
+                self.keys["cname"].append(cname)
                 count_ip -= len(ip_list)
             else:
-                lock = threading.Lock()
-                threads = []
+                response_queue = queue.Queue()
 
-                def multi_thread(ip):
-                    ki, cdn = self.identify_cdn_byip(domain, ip)
-                    if ki == "http_header":
-                        with lock:
-                            self.cdn_list.extend(cdn)
-                            # ip_cdn_map[ip] = cdn
-                    elif ki == "tls_cert":
-                        with lock:
-                            self.cdn_list.append(cdn)
-                            # ip_cdn_map[ip] = cdn
-                    elif ki == "rdap_info":
-                        with lock:
-                            if cdn in rdap_cdn:
-                                rdap_cdn[cdn] += 1
-                                # ip_cdn_map[ip] = cdn
-                            else:
-                                rdap_cdn[cdn] = 1
-                                # ip_cdn_map[ip] = cdn
-                    # else:
-                    #     ip_cdn_map[ip] = None
-
-                for ip in ip_list:
-                    thread = threading.Thread(target=multi_thread, args=(ip,))
-                    threads.append(thread)
-                    thread.start()
-
-                stime = time.time()
-                
-                with create_progress() as progress:
-                    progress_task = progress.add_task("CDN Detection", total=len(ip_list))
+                def resolve_handler():
                     while True:
-                        time.sleep(0.2)
-                        exit_counter = 0
-                        for thread in threads:
-                            if not thread.is_alive():
-                                exit_counter += 1
-                        progress.update(progress_task, completed=exit_counter)
+                        try:
+                            ki, cdn = response_queue.get(timeout=1)
+                            if ki is None:  # stop signal
+                                break
 
-                        sys.stdout.flush()
-                        if exit_counter == len(ip_list):
-                            break
-                        if (time.time() - stime)>60:
-                            break
-                print()
+                            if ki == "http_header":
+                                self.cdn_list.extend(cdn)
+                                # ip_cdn_map[ip] = cdn
+                            elif ki == "tls_cert":
+                                self.cdn_list.append(cdn)
+                                # ip_cdn_map[ip] = cdn
+                            elif ki == "rdap_info":
+                                if cdn in rdap_cdn:
+                                    rdap_cdn[cdn] += 1
+                                    # ip_cdn_map[ip] = cdn
+                                else:
+                                    rdap_cdn[cdn] = 1
+                                    # ip_cdn_map[ip] = cdn
+                            # else:
+                            #     ip_cdn_map[ip] = None
+
+                        except queue.Empty:
+                            continue
+
+                thread_resolve_handler = threading.Thread(target=resolve_handler)
+                thread_resolve_handler.start()
+
+                with ThreadPoolExecutor(max_workers=32) as executor:
+                    futures = {
+                        executor.submit(self.identify_cdn_byip, domain, ip): ip for ip in ip_list
+                    }
+
+                    stime = time.time()
+                    n_dones = 0
+
+                    with create_progress() as progress:
+                        progress_task = progress.add_task(f"CDN Detection ip of cname `{cname}`", total=len(ip_list))
+
+                        while True:
+                            time.sleep(0.2)
+                            done_futures = []
+                            for future in futures:
+                                if future.done():
+                                    n_dones += 1
+                                    response_queue.put(future.result())
+                                    done_futures.append(future)
+                            
+                            for future in done_futures:
+                                del futures[future]
+                                
+
+                            progress.update(progress_task, completed=n_dones)
+
+                            if n_dones == len(ip_list):
+                                break
+                            if (time.time() - stime) > 60:
+                                break
                 
+                response_queue.put((None, None))
+                thread_resolve_handler.join()
+
         for index, number in rdap_cdn.items():
             if number > count_ip / 2:
                 self.cdn_list.append(index)
-        #if len(self.cdn_list) != 0:
+        # if len(self.cdn_list) != 0:
             # self.key["dns_hijack"] = [x for x,y in ip_cdn_map.items() if y==None]
             # for ip, cdn in ip_cdn_map.items():
             #     if cdn == None
         if self.web_hosting(dns_dict):
-            self.key["web_hosting"] = True
+            self.keys["web_hosting"] = True
             return [cdn + " (likely hosted on cloud)" for cdn in list(set(self.cdn_list))]
         return list(set(self.cdn_list))

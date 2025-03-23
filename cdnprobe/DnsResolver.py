@@ -166,7 +166,6 @@ class DnsResolver:
         response_queue.put((None, None))
         thread_resolve_handler.join()
 
-        print()
         return cname_prefix, ip_number
 
     async def async_process_resolve(self, domain, resolver):
@@ -224,7 +223,6 @@ class DnsResolver:
 
         for thread in pending:
             thread.cancel()
-        print()
         return cname_prefix, ip_number
 
     def dns_result_prefix(self, domain):  # unify the formats for analyze

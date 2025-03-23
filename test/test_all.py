@@ -1,12 +1,12 @@
 import sys
 sys.path.append("..")
 
-import os
-import json
-import pandas as pd
-import time
-from cdnprobe import CdnDetector
 from cdnprobe import DnsResolver
+from cdnprobe import CdnDetector
+import time
+import pandas as pd
+import json
+import os
 
 
 
@@ -25,9 +25,10 @@ def detect(domain):
     # dns_dict, ip_number = asyncio.run(d.async_process_resolve(website,"8.8.8.8"))
     print(dns_dict)
 
-    result = cdnDetector.identify_cdn(domain, dns_dict)
-    key = cdnDetector.key
-    return (result, key, ip_number)
+    identified_cdn = cdnDetector.identify_cdn(domain, dns_dict)
+    keys = cdnDetector.keys
+    print(identified_cdn, keys, ip_number)
+    return (identified_cdn, keys, ip_number)
 
 
 def FILEPATH_RESOURCE(filename):
@@ -53,11 +54,12 @@ if __name__ == "__main__":
         print(f"{i}/{len(domains)}")
         print(domain)
         i += 1
-        result = detect(domain)
-        print(result)
-        result_dict[domain] = result[1]
-        result_dict[domain]['cdn'] = result[0]
-        result_dict[domain]['dns'] = result[2]
+
+        identified_cdn, keys, ip_number = detect(domain)
+        result_dict[domain] = keys
+        result_dict[domain]['cdn'] = identified_cdn
+        result_dict[domain]['dns'] = ip_number
+
         tmp_name = f"{time.time()}.json"
         with open(os.path.join(tmp_dirpath, tmp_name), "w")as f:
             json.dump(result_dict, f, indent=4)
