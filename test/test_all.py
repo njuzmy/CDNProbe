@@ -1,5 +1,5 @@
-import sys
-sys.path.append("..")
+import sys  # noqa
+sys.path.append("..")  # noqa
 
 from cdnprobe import DnsResolver
 from cdnprobe import CdnDetector
@@ -7,7 +7,6 @@ import time
 import pandas as pd
 import json
 import os
-
 
 
 tmp_dirpath = "../tmp"
