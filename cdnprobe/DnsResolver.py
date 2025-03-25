@@ -9,10 +9,11 @@ import clientsubnetoption
 import asyncio
 from cdnprobe.utils import create_progress
 
+
 class DnsResolver:
     def __init__(self, filepath_prefixs=None, dns_server='223.5.5.5') -> None:
         self.dns_server = dns_server
-        self.dns_record = {}
+        self.dns_records = {}
         self.prefixs = []
         self.subnets = []
 
@@ -20,9 +21,15 @@ class DnsResolver:
             with open(filepath_prefixs, 'r') as rel_file:
                 res = rel_file.read()
                 self.prefixs = res.strip().split(',')
-                self.subnets = [prefix.strip(" '").split('/')[0] for prefix in self.prefixs]
+                self.prefixs = [prefix.strip().strip("'") for prefix in self.prefixs]
+                self.prefixs = [prefix for prefix in self.prefixs if prefix != ""]
+
+                self.subnets = [self.convert_prefix_to_subnet(prefix) for prefix in self.prefixs]
 
         self.len_subnets = len(self.subnets)
+
+    def convert_prefix_to_subnet(self, prefix):
+        return prefix.split('/')[0]
 
     def resolve(self, domain, prefix=None):
         if prefix is not None:
@@ -46,7 +53,7 @@ class DnsResolver:
                         cname_prefix[cname].append(ip)
                 elif ip is not None:
                     cname_prefix[cname] = [ip]
-                self.dns_record[prefix] = cname
+                self.dns_records[prefix] = cname
         return cname_prefix
 
     def resolve_response(self, dns_message):
@@ -55,7 +62,7 @@ class DnsResolver:
         if ";ANSWER" in dns_message:
             lines = dns_message.split("\n")
             is_in_answer = False
-            a_record = None
+            a_record = None  # TODO: Mutlti A record
             cname = None
             for line in lines:
                 if is_in_answer:
@@ -85,8 +92,8 @@ class DnsResolver:
         def resolve_handler():
             while True:
                 try:
-                    prefix, response = response_queue.get(timeout=1)
-                    if prefix is None:  # stop signal
+                    subnet, response = response_queue.get(timeout=1)
+                    if subnet is None:  # stop signal
                         break
 
                     if response is not None:
@@ -96,7 +103,7 @@ class DnsResolver:
                                 cname_prefix[cname].append(ip)
                         elif ip is not None:
                             cname_prefix[cname] = [ip]
-                        self.dns_record[prefix] = cname
+                        self.dns_records[subnet] = {"cname": cname, "ip": ip}
                         if ip in ip_number.keys():
                             ip_number[ip] += 1
                         else:
@@ -107,17 +114,16 @@ class DnsResolver:
 
         def query_with_subnet(domain, subnet):
             try:
-                # print(domain, prefix, self.resolver)
 
                 # TODO TODO
                 subnet = subnet.strip(" '").split('/')[0]
                 cso = clientsubnetoption.ClientSubnetOption(subnet)
                 message = dns.message.make_query(domain, qtype)
                 message.use_edns(options=[cso])
-                response = dns.query.udp(message, self.dns_server, timeout=10)
+                response = dns.query.udp(message, self.dns_server, timeout=60)
 
             except Exception as e:
-                print(f"# {subnet}: {e}")
+                print(f"# {subnet}: {e} {subnet}")
                 response = None
 
             return response
@@ -133,7 +139,6 @@ class DnsResolver:
             stime = time.time()
             n_dones = 0
 
-                    
             with create_progress() as progress:
                 progress_task = progress.add_task("DNS Resolve", total=self.len_subnets)
 
@@ -141,13 +146,15 @@ class DnsResolver:
                     time.sleep(0.2)
 
                     done_futures = []
-                    for future in futures:
+                    for future, subnet in futures.items():
                         if future.done():
                             n_dones += 1
                             try:
-                                response_queue.put((futures[future], future.result()))
+                                response_queue.put((subnet, future.result()))
                             except Exception as e:
                                 print(f"Error: {e}")
+                                self.dns_records[subnet] = {"cname": None, "ip": None}
+
                             done_futures.append(future)
 
                     progress.update(progress_task, completed=n_dones)
@@ -171,7 +178,7 @@ class DnsResolver:
     async def async_process_resolve(self, domain, resolver):
         cname_prefix = {}
         ip_number = {}
-        self.dns_record = {}
+        self.dns_records = {}
 
         async def async_resolve(domain, prefix):
             try:
@@ -205,7 +212,7 @@ class DnsResolver:
                 if x:
                     prefix, cname, ip = x
                     cname_prefix.setdefault(cname, set()).add(ip)
-                    self.dns_record[prefix] = cname
+                    self.dns_records[prefix] = cname
                     ip_number[ip] = ip_number.setdefault(ip, 0) + 1
             threads = pending
             print("\r", end="")
