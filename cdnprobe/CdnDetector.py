@@ -371,28 +371,28 @@ class CdnDetector:
                     stime = time.time()
                     n_dones = 0
 
-                    with create_progress() as progress:
-                        progress_task = progress.add_task(f"CDN Detection ip of cname `{cname}`", total=len(ip_list))
+                    # with create_progress() as progress:
+                        # progress_task = progress.add_task(f"CDN Detection ip of cname `{cname}`", total=len(ip_list))
 
-                        while True:
-                            time.sleep(0.2)
-                            done_futures = []
-                            for future in futures:
-                                if future.done():
-                                    n_dones += 1
-                                    response_queue.put(future.result())
-                                    done_futures.append(future)
+                    while True:
+                        time.sleep(0.2)
+                        done_futures = []
+                        for future in futures:
+                            if future.done():
+                                n_dones += 1
+                                response_queue.put(future.result())
+                                done_futures.append(future)
+                        
+                        for future in done_futures:
+                            del futures[future]
                             
-                            for future in done_futures:
-                                del futures[future]
-                                
 
-                            progress.update(progress_task, completed=n_dones)
+                        # progress.update(progress_task, completed=n_dones)
 
-                            if n_dones == len(ip_list):
-                                break
-                            if (time.time() - stime) > 60:
-                                break
+                        if n_dones == len(ip_list):
+                            break
+                        if (time.time() - stime) > 60:
+                            break
                 
                 response_queue.put((None, None))
                 thread_resolve_handler.join()
