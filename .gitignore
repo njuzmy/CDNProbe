@@ -9,3 +9,4 @@ tmp/
 tmp_old/
 result/
 fig/
+resource/tranco/*.csv
