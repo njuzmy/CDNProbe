@@ -1,20 +1,14 @@
 import json
-import subprocess
 import re
-import os
-import utils
 import threading
+import subprocess
 
-res_dirpath = "../resource"
-cdn_to_ns_filename = "cdn_to_ns_ans.json"
-
-
-def get_resource_path(filename):
-    return os.path.join(res_dirpath, filename)
+from cdnprobe import utils
+from cdnprobe.paths import cdn_asset
 
 
 def validate(domain, cdn_list):
-    cdn_ip_dict = json.load(open("../resource/cdn_ip.json", 'r'))
+    cdn_ip_dict = json.load(open(cdn_asset("cdn_ip.json"), 'r'))
     validated = []
     for cdn in cdn_list:
         cdn = re.sub('\(.*?\)', '', cdn).strip()
@@ -33,7 +27,7 @@ def validate(domain, cdn_list):
 
 
 def validate_cname_ns(domain, cdn_list):
-    cdn_ns_dist = json.load(open(get_resource_path("cdn_to_ns_ans.json"), "r"))
+    cdn_ns_dist = json.load(open(cdn_asset("map_cdn_to_ns.json"), "r"))
     validate_ans = []
     lock = threading.Lock()
 

@@ -1,0 +1,33 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "cdnprobe"
+version = "0.1.0"
+description = "CDN detection and DNS probing toolkit."
+readme = "README.md"
+requires-python = ">=3.10"
+license = {text = "MIT"}
+authors = [
+  {name = "CDNProbe maintainers"},
+]
+dependencies = [
+  "clientsubnetoption",
+  "dnspython",
+  "intervaltree",
+  "ipwhois",
+  "jsonlines",
+  "netaddr",
+  "pandas",
+  "pyasn",
+  "requests",
+  "rich",
+  "pytest",
+]
+
+[tool.setuptools]
+include-package-data = true
+
+[tool.setuptools.packages.find]
+include = ["cdnprobe*"]

@@ -7,6 +7,9 @@ import time
 import dns
 import clientsubnetoption
 import asyncio
+from pathlib import Path
+
+from cdnprobe.paths import ZDNS_BIN, dns_asset
 from cdnprobe.utils import create_progress
 
 
@@ -16,6 +19,7 @@ class DnsResolver:
         self.dns_records = {}
         self.prefixs = []
         self.subnets = []
+        filepath_prefixs = filepath_prefixs or dns_asset("prefix.txt")
 
         if filepath_prefixs is not None:
             with open(filepath_prefixs, 'r') as rel_file:
@@ -34,8 +38,17 @@ class DnsResolver:
     def resolve(self, domain, prefix=None):
         if prefix is not None:
             try:
-                dns_message = subprocess.check_output("echo %s | ../zdns/zdns A --client-subnet %s --name-servers %s" % (
-                    domain, prefix, self.dns_server), shell=True).decode('utf-8', "ignore")
+                dns_message = subprocess.check_output(
+                    [
+                        str(Path(ZDNS_BIN)),
+                        "A",
+                        "--client-subnet",
+                        prefix,
+                        "--name-servers",
+                        self.dns_server,
+                    ],
+                    input=domain.encode(),
+                ).decode('utf-8', "ignore")
                 return dns_message
             except Exception as e:
                 print(e)

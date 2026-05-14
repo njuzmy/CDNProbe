@@ -1,32 +1,23 @@
-from concurrent import futures
 from concurrent.futures import ThreadPoolExecutor
 import json
-import os
 import queue
 import random
 import re
 import subprocess
-import sys
 import threading
 import time
-from turtle import done
 import warnings
 
 import intervaltree
 import ipwhois
 from netaddr import IPNetwork
 
+from cdnprobe.paths import cdn_asset
 from cdnprobe.utils import create_progress
-
-resource_dirpath = "../resource"
-
-
-def FILEPATH_RESOURCE(filename):
-    return os.path.join(resource_dirpath, filename)
 
 
 class CdnDetector:
-    def __init__(self, filepath_cname_cache: None = None, filepath_cdn: None = None) -> None:
+    def __init__(self, filepath_cname_cache: None = None, filepath_cdn: None = None, pattern_path=None) -> None:
         self.keys = {"cname": [],
                     "http_header": [],
                     "tls_cert": [],
@@ -37,6 +28,9 @@ class CdnDetector:
         self.rdap_cache_ip = {}
         self.rdap_refresh = 60 * 60 * 24
         self.rdap_cache = intervaltree.IntervalTree()
+        filepath_cname_cache = filepath_cname_cache or cdn_asset("cname_cache.json")
+        filepath_cdn = filepath_cdn or cdn_asset("cdnlist.txt")
+        self.pattern_path = pattern_path or cdn_asset("pattern.json")
         self.cname_cache = json.load(open(filepath_cname_cache, 'r'))
         self.off_net = []
         self.dns_hijack = []
@@ -101,7 +95,7 @@ class CdnDetector:
                 regex = regex.replace(k, v)
             return regex
 
-        patterns = json.load(open(FILEPATH_RESOURCE("pattern.json"), 'r'))
+        patterns = json.load(open(self.pattern_path, 'r'))
         regex = '''(%s)\\s*(:)\\s*(%s)\\s*,?'''
         cdns = []
         key_http_header = ""
